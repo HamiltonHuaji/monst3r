@@ -64,7 +64,7 @@ class SimplePool():
             if len(self.items) >= pool_size_thresh:
                 return torch.sum(self.items)/float(len(self.items))
             else:
-                return torch.from_numpy(np.nan)
+                return torch.as_tensor(np.nan)
     
     def sample(self, with_replacement=True):
         idx = np.random.randint(len(self.items))

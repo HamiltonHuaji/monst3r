@@ -25,9 +25,9 @@ def _generic_transform_sk_3d(transform, in_type='', out_type=''):
         input_ = input_.cpu()
         input_ = _convert(input_, in_type)
 
-        input_ = input_.permute(1, 2, 0).detach().numpy()
+        input_ = input_.permute(1, 2, 0).detach().cpu().numpy()
         transformed = transform(input_)
-        output = torch.from_numpy(transformed).float().permute(2, 0, 1)
+        output = torch.as_tensor(transformed).float().permute(2, 0, 1)
         output = _convert(output, out_type)
         return output.to(device)
 
@@ -56,10 +56,10 @@ def pca_embed(emb, keep, valid=None):
     ## Helper function for reduce_emb.
     emb = emb + EPS
     #emb is B x C x H x W
-    emb = emb.permute(0, 2, 3, 1).cpu().detach().numpy() #this is B x H x W x C
+    emb = emb.permute(0, 2, 3, 1).cpu().detach().cpu().numpy() #this is B x H x W x C
 
     if valid:
-        valid = valid.cpu().detach().numpy().reshape((H*W))
+        valid = valid.cpu().detach().cpu().numpy().reshape((H*W))
 
     emb_reduced = list()
 
@@ -93,7 +93,7 @@ def pca_embed(emb, keep, valid=None):
 
     emb_reduced = np.stack(emb_reduced, axis=0).astype(np.float32)
 
-    return torch.from_numpy(emb_reduced).permute(0, 3, 1, 2)
+    return torch.as_tensor(emb_reduced).permute(0, 3, 1, 2)
 
 def pca_embed_together(emb, keep):
     ## emb -- [S,H/2,W/2,C]
@@ -101,7 +101,7 @@ def pca_embed_together(emb, keep):
     ## Helper function for reduce_emb.
     emb = emb + EPS
     #emb is B x C x H x W
-    emb = emb.permute(0, 2, 3, 1).cpu().detach().numpy() #this is B x H x W x C
+    emb = emb.permute(0, 2, 3, 1).cpu().detach().cpu().numpy() #this is B x H x W x C
 
     B, H, W, C = np.shape(emb)
     if np.isnan(emb).any():
@@ -116,7 +116,7 @@ def pca_embed_together(emb, keep):
     if np.isnan(out_img).any():
         return torch.zeros(B, keep, H, W)
     
-    return torch.from_numpy(out_img).permute(0, 3, 1, 2)
+    return torch.as_tensor(out_img).permute(0, 3, 1, 2)
 
 def reduce_emb(emb, valid=None, inbound=None, together=False):
     ## emb -- [S,C,H/2,W/2], inbound -- [S,1,H/2,W/2]
@@ -265,7 +265,7 @@ def seq2color(im, norm=True, colormap='coolwarm'):
     # coeffs[:int(S/2)] -= 2.0
     # coeffs[int(S/2)+1:] += 2.0
     
-    coeffs = torch.from_numpy(coeffs).float().cuda()
+    coeffs = torch.as_tensor(coeffs).float().cuda()
     coeffs = coeffs.reshape(1, S, 1, 1).repeat(B, 1, H, W)
     # scale each channel by the right coeff
     im = im * coeffs
@@ -298,7 +298,7 @@ def seq2color(im, norm=True, colormap='coolwarm'):
             assert(False) # invalid colormap
         # move channels into dim 0
         im_ = np.transpose(im_, [2, 0, 1])
-        im_ = torch.from_numpy(im_).float().cuda()
+        im_ = torch.as_tensor(im_).float().cuda()
         out.append(im_)
     out = torch.stack(out, dim=0)
     
@@ -333,7 +333,7 @@ def colorize(d):
     # print('color1', color.shape)
     color = np.reshape(color[:,:3], [H*W, 3])
     # print('color2', color.shape)
-    color = torch.from_numpy(color).permute(1,0).reshape(3,H,W)
+    color = torch.as_tensor(color).permute(1,0).reshape(3,H,W)
     # # gather
     # cm = matplotlib.cm.get_cmap(cmap if cmap is not None else 'gray')
     # if cmap=='RdBu' or cmap=='RdYlGn':
@@ -422,7 +422,7 @@ def draw_frame_id_on_vis(vis, frame_id, scale=0.5, left=5, top=20):
         color, 
         1) # font thickness (int)
     rgb = cv2.cvtColor(rgb.astype(np.uint8), cv2.COLOR_BGR2RGB)
-    vis = torch.from_numpy(rgb).permute(2, 0, 1).unsqueeze(0)
+    vis = torch.as_tensor(rgb).permute(2, 0, 1).unsqueeze(0)
     return vis
 
 COLORMAP_FILE = "./utils/bremm.png"
@@ -505,12 +505,12 @@ class Summ_writer(object):
             tids = torch.arange(N).reshape(1,N).repeat(B2,N).long()
             # tids = torch.zeros(B2, N).long()
         out = self.draw_boxlist2d_on_image_py(
-            rgb[0].cpu().detach().numpy(),
-            boxlist[0].cpu().detach().numpy(),
-            scores[0].cpu().detach().numpy(),
-            tids[0].cpu().detach().numpy(),
+            rgb[0].cpu().detach().cpu().numpy(),
+            boxlist[0].cpu().detach().cpu().numpy(),
+            scores[0].cpu().detach().cpu().numpy(),
+            tids[0].cpu().detach().cpu().numpy(),
             linewidth=linewidth)
-        out = torch.from_numpy(out).type(torch.ByteTensor).permute(2, 0, 1)
+        out = torch.as_tensor(out).type(torch.ByteTensor).permute(2, 0, 1)
         out = torch.unsqueeze(out, dim=0)
         out = preprocess_color(out)
         out = torch.reshape(out, [1, C, H, W])
@@ -953,7 +953,7 @@ class Summ_writer(object):
             for s in range(S):
                 if valid[s]:
                     cv2.circle(rgb, (int(traj[s,0]), int(traj[s,1])), linewidth, color, -1)
-        rgb = torch.from_numpy(rgb).permute(2,0,1).unsqueeze(0)
+        rgb = torch.as_tensor(rgb).permute(2,0,1).unsqueeze(0)
         rgb = preprocess_color(rgb)
         return self.summ_rgb(name, rgb, only_return=only_return, frame_id=frame_id)
 
@@ -995,7 +995,7 @@ class Summ_writer(object):
                     cv2.circle(rgbs_color[s], (traj[s,0], traj[s,1]), linewidth, color, -1)
         rgbs = []
         for rgb in rgbs_color:
-            rgb = torch.from_numpy(rgb).permute(2, 0, 1).unsqueeze(0)
+            rgb = torch.as_tensor(rgb).permute(2, 0, 1).unsqueeze(0)
             rgbs.append(preprocess_color(rgb))
 
         return self.summ_rgbs(name, rgbs, only_return=only_return, frame_ids=frame_ids)
@@ -1078,7 +1078,7 @@ class Summ_writer(object):
 
         rgbs = []
         for rgb in rgbs_color:
-            rgb = torch.from_numpy(rgb).permute(2, 0, 1).unsqueeze(0)
+            rgb = torch.as_tensor(rgb).permute(2, 0, 1).unsqueeze(0)
             rgbs.append(preprocess_color(rgb))
 
         return self.summ_rgbs(name, rgbs, only_return=only_return, frame_ids=frame_ids)
@@ -1161,7 +1161,7 @@ class Summ_writer(object):
 
         rgbs = []
         for rgb in rgbs_color:
-            rgb = torch.from_numpy(rgb).permute(2, 0, 1).unsqueeze(0)
+            rgb = torch.as_tensor(rgb).permute(2, 0, 1).unsqueeze(0)
             rgbs.append(preprocess_color(rgb))
 
         return self.summ_rgbs(name, rgbs, only_return=only_return, frame_ids=frame_ids)
@@ -1221,7 +1221,7 @@ class Summ_writer(object):
 
         rgbs = []
         for rgb in rgbs_color:
-            rgb = torch.from_numpy(rgb).permute(2, 0, 1).unsqueeze(0)
+            rgb = torch.as_tensor(rgb).permute(2, 0, 1).unsqueeze(0)
             rgbs.append(preprocess_color(rgb))
 
         return self.summ_rgbs(name, rgbs, only_return=only_return, frame_ids=frame_ids)
@@ -1264,7 +1264,7 @@ class Summ_writer(object):
                 rgb_color = self.draw_traj_on_image_py(
                     rgb_color, traj, S=S, show_dots=show_dots, show_lines=show_lines, cmap=cmap_, maxdist=maxdist, linewidth=linewidth)
 
-        rgb_color = torch.from_numpy(rgb_color).permute(2, 0, 1).unsqueeze(0)
+        rgb_color = torch.as_tensor(rgb_color).permute(2, 0, 1).unsqueeze(0)
         rgb = preprocess_color(rgb_color)
         return self.summ_rgb(name, rgb, only_return=only_return, frame_id=frame_id)
     
@@ -1482,7 +1482,7 @@ class Summ_writer(object):
                 import ipdb; ipdb.set_trace()
 
             rgb_ = rgb_.transpose(2,0,1)
-            rgb_ = torch.from_numpy(rgb_)
+            rgb_ = torch.as_tensor(rgb_)
 
             rgbs_vis.append(rgb_)
 

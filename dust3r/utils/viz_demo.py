@@ -64,8 +64,8 @@ def get_dynamic_mask_from_pairviewer(scene, flow_net=None, both_directions=False
         flow_net = load_RAFT(model_path="third_party/RAFT/models/raft-things.pth").to('cuda').eval()
 
     imgs = scene.imgs
-    img1 = torch.from_numpy(imgs[0]*255).permute(2,0,1)[None]                       # (B, 3, H, W)
-    img2 = torch.from_numpy(imgs[1]*255).permute(2,0,1)[None]
+    img1 = torch.as_tensor(imgs[0]*255).permute(2,0,1)[None]                       # (B, 3, H, W)
+    img2 = torch.as_tensor(imgs[1]*255).permute(2,0,1)[None]
     with torch.no_grad():
         forward_flow = flow_net(img1.cuda(), img2.cuda(), iters=20, test_mode=True)[1]  # (B, 2, H, W)
         if both_directions:

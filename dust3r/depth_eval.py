@@ -163,11 +163,11 @@ def depth_evaluation(predicted_depth_original, ground_truth_depth_original, max_
     """
     
     if isinstance(predicted_depth_original, np.ndarray):
-        predicted_depth_original = torch.from_numpy(predicted_depth_original)
+        predicted_depth_original = torch.as_tensor(predicted_depth_original)
     if isinstance(ground_truth_depth_original, np.ndarray):
-        ground_truth_depth_original = torch.from_numpy(ground_truth_depth_original)
+        ground_truth_depth_original = torch.as_tensor(ground_truth_depth_original)
     if custom_mask is not None and isinstance(custom_mask, np.ndarray):
-        custom_mask = torch.from_numpy(custom_mask)
+        custom_mask = torch.as_tensor(custom_mask)
 
     # if the dimension is 3, flatten to 2d along the batch dimension
     if predicted_depth_original.dim() == 3:

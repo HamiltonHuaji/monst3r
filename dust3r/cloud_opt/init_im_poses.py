@@ -328,7 +328,7 @@ def fast_pnp(pts3d, focal, msk, device, pp=None, niter_PnP=10):
 
     _, R, T, best_focal = best
     R = cv2.Rodrigues(R)[0]  # world to cam
-    R, T = map(torch.from_numpy, (R, T))
+    R, T = map(torch.as_tensor, (R, T))
     return best_focal, inv(sRT_to_4x4(1, R, T, device))  # cam to world
 
 

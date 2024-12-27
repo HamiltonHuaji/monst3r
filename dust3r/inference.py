@@ -3,7 +3,7 @@
 # --------------------------------------------------------
 import tqdm
 import torch
-from dust3r.utils.device import to_cpu, collate_with_cat
+from dust3r.utils.device import to_cpu, to_cuda, collate_with_cat
 from dust3r.utils.misc import invalid_to_nans
 from dust3r.utils.geometry import depthmap_to_pts3d, geotrf
 from dust3r.viz import SceneViz, auto_cam_size
@@ -67,11 +67,11 @@ def loss_of_one_batch(batch, model, criterion, device, symmetrize_batch=False, u
     if symmetrize_batch:
         view1, view2 = make_batch_symmetric(batch)
 
-    with torch.cuda.amp.autocast(enabled=bool(use_amp)):
+    with torch.amp.autocast('cuda', enabled=bool(use_amp)):
         pred1, pred2 = model(view1, view2)
             
         # loss is supposed to be symmetric
-        with torch.cuda.amp.autocast(enabled=False):
+        with torch.amp.autocast('cuda', enabled=False):
             loss = criterion(view1, view2, pred1, pred2) if criterion is not None else None
 
     result = dict(view1=view1, view2=view2, pred1=pred1, pred2=pred2, loss=loss)
@@ -94,7 +94,7 @@ def inference(pairs, model, device, batch_size=8, verbose=True):
 
         res = loss_of_one_batch(collate_with_cat(pairs[i:i+batch_size]), model, None, device)
 
-        result.append(to_cpu(res))
+        result.append(to_cuda(res))
 
     result = collate_with_cat(result, lists=multiple_shapes)
 

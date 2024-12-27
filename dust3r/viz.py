@@ -390,4 +390,4 @@ def segment_sky(image):
     mask3 = np.in1d(labels, selection).reshape(labels.shape)
 
     # Apply mask
-    return torch.from_numpy(mask3)
+    return torch.as_tensor(mask3)

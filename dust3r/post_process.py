@@ -14,6 +14,8 @@ def estimate_focal_knowing_depth(pts3d, pp, focal_mode='median', min_focal=0., m
         1) estimate the camera focal using a robust estimator
         2) reproject points onto true rays, minimizing a certain error
     """
+    # import IPython
+    # IPython.embed()
     B, H, W, THREE = pts3d.shape
     assert THREE == 3
 

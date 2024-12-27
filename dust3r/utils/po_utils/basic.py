@@ -146,7 +146,7 @@ def reduce_masked_median(x, mask, keep_batch=False):
                 meds[b] = np.median(xb)
             else:
                 meds[b] = np.nan
-        meds = torch.from_numpy(meds).to(device)
+        meds = torch.as_tensor(meds).to(device)
         return meds.float()
     else:
         x = np.reshape(x, [-1])
@@ -157,7 +157,7 @@ def reduce_masked_median(x, mask, keep_batch=False):
         else:
             med = np.nan
         med = np.array([med], np.float32)
-        med = torch.from_numpy(med).to(device)
+        med = torch.as_tensor(med).to(device)
         return med.float()
 
 def pack_seqdim(tensor, B):

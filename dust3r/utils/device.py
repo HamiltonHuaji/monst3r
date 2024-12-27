@@ -30,7 +30,7 @@ def todevice(batch, device, callback=None, non_blocking=False):
             x = x.detach().cpu().numpy()
     elif x is not None:
         if isinstance(x, np.ndarray):
-            x = torch.from_numpy(x)
+            x = torch.as_tensor(x)
         if torch.is_tensor(x):
             x = x.to(device, non_blocking=non_blocking)
     return x
@@ -66,7 +66,7 @@ def collate_with_cat(whatever, lists=False):
         if isinstance(elem, torch.Tensor):
             return listify(whatever) if lists else torch.cat(whatever)
         if isinstance(elem, np.ndarray):
-            return listify(whatever) if lists else torch.cat([torch.from_numpy(x) for x in whatever])
+            return listify(whatever) if lists else torch.cat([torch.as_tensor(x) for x in whatever])
 
         # otherwise, we just chain lists
         return sum(whatever, T())

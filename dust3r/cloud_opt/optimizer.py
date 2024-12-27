@@ -119,7 +119,10 @@ class PointCloudOptimizer(BasePCOptimizer):
         print('precomputing flow...')
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         get_valid_flow_mask = OccMask(th=3.0)
-        pair_imgs = [np.stack(self.imgs)[self._ei], np.stack(self.imgs)[self._ej]]
+
+        imgs = torch.stack([torch.as_tensor(img) for img in self.imgs]).to(device).float()
+        pair_imgs = [imgs[self._ei], imgs[self._ej]]
+        # pair_imgs = [np.stack(self.imgs.cpu())[self._ei], np.stack(self.imgs.cpu())[self._ej]]
 
         flow_net = load_RAFT() if sintel_ckpt else load_RAFT("third_party/RAFT/models/Tartan-C-T-TSKH-spring540x960-M.pth")
         flow_net = flow_net.to(device)
@@ -132,8 +135,7 @@ class PointCloudOptimizer(BasePCOptimizer):
             num_pairs = len(pair_imgs[0])
             for i in tqdm(range(0, num_pairs, chunk_size)):
                 end_idx = min(i + chunk_size, num_pairs)
-                imgs_ij = [torch.tensor(pair_imgs[0][i:end_idx]).float().to(device),
-                        torch.tensor(pair_imgs[1][i:end_idx]).float().to(device)]
+                imgs_ij = [pair_imgs[0][i:end_idx], pair_imgs[1][i:end_idx]]
                 flow_ij.append(flow_net(imgs_ij[0].permute(0, 3, 1, 2) * 255, 
                                         imgs_ij[1].permute(0, 3, 1, 2) * 255, 
                                         iters=20, test_mode=True)[1])
@@ -239,7 +241,7 @@ class PointCloudOptimizer(BasePCOptimizer):
             autocast_dtype = torch.bfloat16 if device == 'cuda' else torch.float32
             with torch.autocast(device_type=device, dtype=autocast_dtype):
                 predictor = build_sam2_video_predictor(model_cfg, sam2_checkpoint, device=device)
-                frame_tensors = torch.from_numpy(np.array((self.imgs))).permute(0, 3, 1, 2).to(device)
+                frame_tensors = torch.as_tensor(np.array((self.imgs))).permute(0, 3, 1, 2).to(device)
                 inference_state = predictor.init_state(video_path=frame_tensors)
                 mask_list = [self.dynamic_masks[i] for i in range(self.n_imgs)]
                 
@@ -288,7 +290,7 @@ class PointCloudOptimizer(BasePCOptimizer):
         
                 # Update dynamic masks
                 for i in range(self.n_imgs):
-                    self.sam2_dynamic_masks[i] = torch.from_numpy(self.sam2_dynamic_masks[i][0]).to(device)
+                    self.sam2_dynamic_masks[i] = torch.as_tensor(self.sam2_dynamic_masks[i][0]).to(device)
                     self.dynamic_masks[i] = self.dynamic_masks[i].to(device)
                     self.dynamic_masks[i] = self.dynamic_masks[i] | self.sam2_dynamic_masks[i]
         
@@ -302,7 +304,7 @@ class PointCloudOptimizer(BasePCOptimizer):
 
 
     def _check_all_imgs_are_selected(self, msk):
-        self.msk = torch.from_numpy(np.array(msk, dtype=bool)).to(self.device)
+        self.msk = torch.as_tensor(np.array(msk, dtype=bool)).to(self.device)
         assert np.all(self._get_msk_indices(msk) == np.arange(self.n_imgs)), 'incomplete mask!'
         pass
 

@@ -192,7 +192,7 @@ class SintelDUSt3R(BaseStereoViewDataset):
             # load dynamic mask
             if dynamic_mask_path is not None and os.path.exists(dynamic_mask_path):
                 dynamic_mask = PIL.Image.open(dynamic_mask_path).convert('L')
-                dynamic_mask = ToTensor(dynamic_mask).sum(0).numpy()
+                dynamic_mask = ToTensor(dynamic_mask).sum(0).cpu().numpy()
                 _, dynamic_mask, _ = self._crop_resize_if_necessary(
                 rgb_image, dynamic_mask, intrinsics, resolution, rng=rng, info=impath)
                 dynamic_mask = dynamic_mask > 0.5

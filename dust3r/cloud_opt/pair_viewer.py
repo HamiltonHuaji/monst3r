@@ -43,10 +43,10 @@ class PairViewer (BasePCOptimizer):
 
             # estimate the pose of pts1 in image 2
             pixels = np.mgrid[:W, :H].T.astype(np.float32)
-            pts3d = self.pred_j[edge_str(1-i, i)].numpy()
+            pts3d = self.pred_j[edge_str(1-i, i)].cpu().numpy()
             assert pts3d.shape[:2] == (H, W)
-            msk = self.get_masks()[i].numpy()
-            K = np.float32([(focal, 0, pp[0]), (0, focal, pp[1]), (0, 0, 1)])
+            msk = self.get_masks()[i].cpu().numpy()
+            K = np.float32([(focal, 0, W/2), (0, focal, H/2), (0, 0, 1)])
 
             try:
                 res = cv2.solvePnPRansac(pts3d[msk], pixels[msk], K, None,
@@ -58,7 +58,7 @@ class PairViewer (BasePCOptimizer):
                 pose = inv(np.r_[np.c_[R, T], [(0, 0, 0, 1)]])  # cam to world
             except:
                 pose = np.eye(4)
-            rel_poses.append(torch.from_numpy(pose.astype(np.float32)))
+            rel_poses.append(torch.as_tensor(pose.astype(np.float32)))
 
         # let's use the pair with the most confidence
         if confs[0] > confs[1]:
@@ -126,7 +126,7 @@ class PairViewer (BasePCOptimizer):
                 pts, _ = depthmap_to_absolute_camera_coordinates(d.cpu().numpy(),
                                                                 intrinsics.cpu().numpy(),
                                                                 im_pose.cpu().numpy())
-                pts3d.append(torch.from_numpy(pts).to(device=self.device))
+                pts3d.append(torch.as_tensor(pts).to(device=self.device))
         return pts3d
 
     def forward(self):
